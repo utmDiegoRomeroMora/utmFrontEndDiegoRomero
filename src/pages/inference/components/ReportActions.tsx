@@ -85,8 +85,6 @@ export default function ReportActions({ results }: Props) {
               </div>
             </button>
           ))}
-
-          {/* Summary stats */}
           <div className="ml-auto flex items-center gap-4 pl-4 border-l border-gray-200">
             <div className="text-center">
               <p className="font-heading font-black text-xl text-guinda-dark">{results.length}</p>
@@ -106,8 +104,6 @@ export default function ReportActions({ results }: Props) {
             </div>
           </div>
         </div>
-
-        {/* Notice */}
         <div className="mt-5 flex items-start gap-3 bg-gray-50 border border-gray-200 rounded-lg px-4 py-3">
           <div className="w-5 h-5 flex items-center justify-center flex-shrink-0 mt-0.5">
             <i className="ri-information-line text-gray-400 text-base" />
@@ -117,8 +113,6 @@ export default function ReportActions({ results }: Props) {
           </p>
         </div>
       </div>
-
-      {/* Toast */}
       {showMsg && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-guinda text-white font-body text-sm px-5 py-3 rounded-lg border border-guinda-light">
           <span className="flex items-center gap-2"><i className="ri-checkbox-circle-line text-dorado" />{showMsg}</span>

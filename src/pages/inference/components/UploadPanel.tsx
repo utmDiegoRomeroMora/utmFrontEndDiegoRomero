@@ -56,7 +56,6 @@ export default function UploadPanel({ appState, uploadedFile, errorMessage, onFi
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-      {/* Panel header */}
       <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 flex items-center justify-center">
@@ -75,7 +74,6 @@ export default function UploadPanel({ appState, uploadedFile, errorMessage, onFi
       </div>
 
       <div className="p-6 flex flex-col gap-5">
-        {/* Drop zone */}
         {!isComplete && (
           <div
             className={`border-2 border-dashed rounded-lg p-8 flex flex-col items-center justify-center gap-4 transition-colors duration-200 cursor-pointer ${
@@ -103,8 +101,6 @@ export default function UploadPanel({ appState, uploadedFile, errorMessage, onFi
             </div>
           </div>
         )}
-
-        {/* File info */}
         {hasFile && (
           <div className="flex items-center gap-4 bg-dorado-pale border border-dorado/30 rounded-lg px-5 py-3">
             <div className="w-10 h-10 flex items-center justify-center bg-white rounded-md border border-dorado/30 flex-shrink-0">
@@ -127,7 +123,7 @@ export default function UploadPanel({ appState, uploadedFile, errorMessage, onFi
           </div>
         )}
 
-        {/* Validation error */}
+
         {(validationError || errorMessage) && (
           <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
             <div className="w-5 h-5 flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -136,8 +132,6 @@ export default function UploadPanel({ appState, uploadedFile, errorMessage, onFi
             <p className="font-body text-sm text-red-700">{validationError || errorMessage}</p>
           </div>
         )}
-
-        {/* Disclaimer */}
         <div className="flex items-start gap-3 bg-guinda-ultra border border-guinda/15 rounded-lg px-4 py-3">
           <div className="w-5 h-5 flex items-center justify-center flex-shrink-0 mt-0.5">
             <i className="ri-information-line text-guinda text-base" />
@@ -147,7 +141,6 @@ export default function UploadPanel({ appState, uploadedFile, errorMessage, onFi
           </p>
         </div>
 
-        {/* Action buttons */}
         <div className="flex items-center gap-3 pt-1">
           <button
             disabled={!hasFile || isProcessing || isComplete}

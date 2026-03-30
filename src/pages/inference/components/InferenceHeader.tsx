@@ -20,7 +20,6 @@ export default function InferenceHeader({ appState, recordCount, fileName }: Pro
   return (
     <div className="bg-white border-b border-gray-200 pt-20">
       <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Breadcrumb */}
         <div className="flex items-center gap-2 mb-4 font-body text-xs text-gray-400">
           <i className="ri-home-4-line" />
           <span>Inicio</span>
@@ -29,7 +28,6 @@ export default function InferenceHeader({ appState, recordCount, fileName }: Pro
         </div>
 
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
-          {/* Title block */}
           <div>
             <div className="flex items-center gap-3 mb-2">
               <div className="w-8 h-8 flex items-center justify-center bg-guinda rounded-md">
@@ -44,7 +42,6 @@ export default function InferenceHeader({ appState, recordCount, fileName }: Pro
             </p>
           </div>
 
-          {/* Status badge */}
           <div className={`inline-flex items-center gap-3 px-5 py-3 rounded-lg border ${cfg.bar} border-current/20 flex-shrink-0`}>
             <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${cfg.dot}`} />
             <span className="font-body text-sm font-semibold whitespace-nowrap">{cfg.label}</span>
@@ -61,7 +58,6 @@ export default function InferenceHeader({ appState, recordCount, fileName }: Pro
           </div>
         </div>
 
-        {/* Sub info bar */}
         <div className="mt-5 pt-4 border-t border-gray-100 flex flex-wrap items-center gap-6">
           {[
             { icon: 'ri-file-excel-2-line', label: 'Entrada: archivo CSV' },

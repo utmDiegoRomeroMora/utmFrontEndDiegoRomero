@@ -1,17 +1,174 @@
 import { useState, useCallback } from 'react';
+import Papa from 'papaparse';
 import type { AppState, MunicipalRecord } from './types';
-import { mockInferenceResults } from '../../mocks/inferenceData';
 import Navbar from '../../components/feature/Navbar';
 import InferenceHeader from './components/InferenceHeader';
 import ProcessStepper from './components/ProcessStepper';
 import UploadPanel from './components/UploadPanel';
 import KPISummary from './components/KPISummary';
-import PriorityPanel from './components/PriorityPanel';
 import ResultsTable from './components/ResultsTable';
 import TechnicalPanel from './components/TechnicalPanel';
 import ReportActions from './components/ReportActions';
 
 const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
+
+const API_BASE = 'https://utmserviciobackendmlutm.onrender.com';
+const HEALTH_URL = `${API_BASE}/health`;
+const PREDICT_BATCH_URL = `${API_BASE}/predict_batch`;
+const REQUEST_TIMEOUT_MS = 180000;
+const HEALTH_TIMEOUT_MS = 30000;
+const HEALTH_RETRIES = 3;
+const HEALTH_RETRY_DELAY_MS = 2500;
+
+type CsvRow = Record<string, unknown>;
+
+interface BackendPrediction {
+  predicted_class?: string;
+  predicted_index?: number;
+  confidence?: number;
+  severity_level?: string;
+  severity_description?: string;
+  recommendation?: string;
+  possible_mlp_results?: string[];
+  probabilities?: Record<string, number>;
+}
+
+function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: number) {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+  return fetch(url, { ...init, signal: controller.signal }).finally(() => {
+    window.clearTimeout(timeoutId);
+  });
+}
+
+function normalizeKey(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
+}
+
+function getValueFromCandidates(row: CsvRow, keys: string[]): string {
+  const entries = Object.entries(row);
+  for (const candidate of keys) {
+    const normalizedCandidate = normalizeKey(candidate);
+    const match = entries.find(([rawKey]) => normalizeKey(rawKey) === normalizedCandidate);
+    if (!match) continue;
+    const value = match[1];
+    if (value === null || value === undefined) continue;
+    const text = String(value).trim();
+    if (text) return text;
+  }
+  return '';
+}
+
+function mapClass(rawClass: string | undefined): MunicipalRecord['clasePred'] {
+  const normalized = normalizeKey(rawClass ?? '');
+  if (normalized === 'sinsequia') return 'sin_sequia';
+  if (normalized === 'd0') return 'D0';
+  if (normalized === 'd1') return 'D1';
+  if (normalized === 'd2') return 'D2';
+  if (normalized === 'd3') return 'D3';
+  if (normalized === 'd4') return 'D4';
+  return 'sin_sequia';
+}
+
+function getAlertLevel(clasePred: MunicipalRecord['clasePred']): MunicipalRecord['nivelAlerta'] {
+  if (clasePred === 'D3' || clasePred === 'D4') return 'alta';
+  if (clasePred === 'D1' || clasePred === 'D2') return 'media';
+  return 'baja';
+}
+
+function getPriority(clasePred: MunicipalRecord['clasePred']): MunicipalRecord['prioridad'] {
+  if (clasePred === 'D4') return 'critica';
+  if (clasePred === 'D3') return 'alta';
+  if (clasePred === 'D2') return 'media';
+  return 'normal';
+}
+
+function getProbabilities(rawProbabilities: Record<string, number> | undefined): MunicipalRecord['probs'] {
+  const source = rawProbabilities ?? {};
+  const out: MunicipalRecord['probs'] = {
+    sin_sequia: 0,
+    D0: 0,
+    D1: 0,
+    D2: 0,
+    D3: 0,
+    D4: 0,
+  };
+
+  Object.entries(source).forEach(([key, value]) => {
+    const normalized = normalizeKey(key);
+    const safeValue = typeof value === 'number' && Number.isFinite(value) ? value : 0;
+    if (normalized === 'sinsequia') out.sin_sequia = safeValue;
+    if (normalized === 'd0') out.D0 = safeValue;
+    if (normalized === 'd1') out.D1 = safeValue;
+    if (normalized === 'd2') out.D2 = safeValue;
+    if (normalized === 'd3') out.D3 = safeValue;
+    if (normalized === 'd4') out.D4 = safeValue;
+  });
+
+  return out;
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof DOMException && error.name === 'AbortError') {
+    return 'La solicitud excedió el tiempo de espera. El servicio puede tardar más de 50 segundos; intente nuevamente.';
+  }
+  if (error instanceof Error) return error.message;
+  return 'Ocurrió un error durante el procesamiento. Verifique el archivo e intente nuevamente.';
+}
+
+function normalizePredictionsPayload(payload: unknown): BackendPrediction[] {
+  if (Array.isArray(payload)) return payload as BackendPrediction[];
+  if (payload && typeof payload === 'object') {
+    const maybeObj = payload as Record<string, unknown>;
+    if (Array.isArray(maybeObj.predictions)) return maybeObj.predictions as BackendPrediction[];
+    if (Array.isArray(maybeObj.results)) return maybeObj.results as BackendPrediction[];
+    if (typeof maybeObj.predicted_class === 'string') return [maybeObj as BackendPrediction];
+  }
+  return [];
+}
+
+function buildObservation(prediction: BackendPrediction): string {
+  const severity = prediction.severity_description?.trim();
+  const recommendation = prediction.recommendation?.trim();
+  if (severity && recommendation) return `${severity} Recomendación: ${recommendation}`;
+  if (severity) return severity;
+  if (recommendation) return `Recomendación: ${recommendation}`;
+  return 'Resultado inferido por el modelo para este registro.';
+}
+
+function parseCsv(file: File): Promise<CsvRow[]> {
+  return new Promise((resolve, reject) => {
+    Papa.parse<CsvRow>(file, {
+      header: true,
+      skipEmptyLines: 'greedy',
+      dynamicTyping: true,
+      complete: (result) => {
+        const rows = result.data.filter((row) => Object.values(row).some((value) => String(value ?? '').trim() !== ''));
+        resolve(rows);
+      },
+      error: (error) => reject(error),
+    });
+  });
+}
+
+async function ensureBackendAvailable() {
+  for (let attempt = 1; attempt <= HEALTH_RETRIES; attempt++) {
+    try {
+      const response = await fetchWithTimeout(HEALTH_URL, { method: 'GET' }, HEALTH_TIMEOUT_MS);
+      if (response.ok) return;
+    } catch {
+      // Retry below
+    }
+
+    if (attempt < HEALTH_RETRIES) await delay(HEALTH_RETRY_DELAY_MS);
+  }
+
+  throw new Error('El servicio de inferencia no está disponible en este momento (health check fallido).');
+}
 
 export default function InferencePage() {
   const [appState, setAppState] = useState<AppState>('empty');
@@ -19,6 +176,7 @@ export default function InferencePage() {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [results, setResults] = useState<MunicipalRecord[]>([]);
   const [errorMessage, setErrorMessage] = useState('');
+  const [processingMessage, setProcessingMessage] = useState('');
 
   const handleFileSelect = useCallback((file: File) => {
     setUploadedFile(file);
@@ -30,17 +188,85 @@ export default function InferencePage() {
     if (!uploadedFile) return;
     setAppState('processing');
     setResults([]);
+    setErrorMessage('');
     try {
-      setCurrentStep(0); await delay(1200);
-      setCurrentStep(1); await delay(1400);
-      setCurrentStep(2); await delay(2200);
-      setCurrentStep(3); await delay(1200);
-      setCurrentStep(4); await delay(500);
-      setResults(mockInferenceResults);
+      setCurrentStep(0);
+      setProcessingMessage('Leyendo archivo CSV...');
+      const csvRows = await parseCsv(uploadedFile);
+
+      if (!csvRows.length) {
+        throw new Error('El archivo CSV no contiene filas válidas para inferencia.');
+      }
+
+      setCurrentStep(1);
+      setProcessingMessage('Validando estructura de datos...');
+      await delay(400);
+
+      setCurrentStep(2);
+      setProcessingMessage('Verificando disponibilidad del backend...');
+      await ensureBackendAvailable();
+
+      setProcessingMessage('Servicio disponible. Enviando inferencia por lote (puede tardar más de 50 segundos)...');
+      const response = await fetchWithTimeout(
+        PREDICT_BATCH_URL,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            observations: csvRows,
+            return_proba: true,
+          }),
+        },
+        REQUEST_TIMEOUT_MS,
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Error del backend (${response.status}): ${errorText || 'sin detalle adicional'}`);
+      }
+
+      const payload = await response.json();
+      const predictions = normalizePredictionsPayload(payload);
+
+      if (!predictions.length) {
+        throw new Error('La respuesta del backend no contiene predicciones válidas.');
+      }
+
+      setCurrentStep(3);
+      setProcessingMessage('Consolidando resultados para el dashboard...');
+
+      const mappedResults: MunicipalRecord[] = predictions.map((prediction, index) => {
+        const row = csvRows[index] ?? {};
+        const clasePred = mapClass(prediction.predicted_class);
+        const probs = getProbabilities(prediction.probabilities);
+        const fallbackMaxProb = Math.max(...Object.values(probs));
+        const rawConfidence = typeof prediction.confidence === 'number' ? prediction.confidence : fallbackMaxProb;
+        const confidencePct = Math.max(0, Math.min(100, Math.round(rawConfidence * 100)));
+        const municipio = getValueFromCandidates(row, ['municipio', 'municipality', 'nombre_municipio', 'city']) || `Registro ${index + 1}`;
+        const estado = getValueFromCandidates(row, ['estado', 'state', 'entidad', 'entidad_federativa']) || 'Sin estado';
+
+        return {
+          id: index + 1,
+          municipio,
+          estado,
+          clasePred,
+          nivelAlerta: getAlertLevel(clasePred),
+          confianza: confidencePct,
+          probMax: confidencePct,
+          probs,
+          observacion: buildObservation(prediction),
+          prioridad: getPriority(clasePred),
+        };
+      });
+
+      setCurrentStep(4);
+      setProcessingMessage('Inferencia finalizada. Generando reporte...');
+      setResults(mappedResults);
       setAppState('complete');
-    } catch {
+      setProcessingMessage('');
+    } catch (error) {
       setAppState('error');
-      setErrorMessage('Ocurrió un error durante el procesamiento. Verifique el archivo e intente nuevamente.');
+      setErrorMessage(getErrorMessage(error));
     }
   }, [uploadedFile]);
 
@@ -50,6 +276,7 @@ export default function InferencePage() {
     setUploadedFile(null);
     setResults([]);
     setErrorMessage('');
+    setProcessingMessage('');
   }, []);
 
   const showResults = appState === 'complete' && results.length > 0;
@@ -107,8 +334,9 @@ export default function InferencePage() {
             <div>
               <p className="font-heading font-bold text-base text-guinda-dark">Ejecutando inferencia</p>
               <p className="font-body text-sm text-gray-500 mt-1">
-                El modelo está procesando los registros del archivo. Por favor espere...
+                {processingMessage || 'El modelo está procesando los registros del archivo. Por favor espere...'}
               </p>
+              <p className="font-body text-xs text-gray-400 mt-2">Este paso puede tardar más de 50 segundos según la disponibilidad del servicio.</p>
             </div>
             <div className="flex items-center gap-2 mt-2">
               {[0, 1, 2].map((i) => (
@@ -126,7 +354,6 @@ export default function InferencePage() {
         {showResults && (
           <>
             <KPISummary results={results} />
-            <PriorityPanel results={results} />
             <ResultsTable results={results} />
             <TechnicalPanel results={results} />
             <ReportActions results={results} />

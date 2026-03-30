@@ -38,7 +38,6 @@ export default function TechnicalPanel({ results }: Props) {
       </div>
 
       <div className="p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Confidence distribution */}
         <div className="bg-guinda-ultra border border-guinda/10 rounded-lg p-5">
           <h4 className="font-heading font-bold text-xs text-guinda-dark uppercase tracking-wide mb-4">
             Distribución de Certidumbre
@@ -72,8 +71,6 @@ export default function TechnicalPanel({ results }: Props) {
             </p>
           </div>
         </div>
-
-        {/* Interpretation guide */}
         <div className="bg-dorado-pale border border-dorado/20 rounded-lg p-5">
           <h4 className="font-heading font-bold text-xs text-guinda-dark uppercase tracking-wide mb-4">
             Guía de Interpretación
@@ -96,8 +93,6 @@ export default function TechnicalPanel({ results }: Props) {
             ))}
           </div>
         </div>
-
-        {/* Border cases warning */}
         <div className="bg-red-50 border border-red-200 rounded-lg p-5">
           <h4 className="font-heading font-bold text-xs text-red-800 uppercase tracking-wide mb-1">
             Casos en Frontera D3/D4

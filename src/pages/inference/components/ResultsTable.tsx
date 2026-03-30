@@ -54,7 +54,6 @@ export default function ResultsTable({ results }: Props) {
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-      {/* Table header */}
       <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 flex items-center justify-center">
@@ -71,10 +70,7 @@ export default function ResultsTable({ results }: Props) {
           </button>
         )}
       </div>
-
-      {/* Filters bar */}
       <div className="px-6 py-3 border-b border-gray-100 bg-gray-50 flex flex-wrap items-center gap-3">
-        {/* Search */}
         <div className="relative flex-1 min-w-48">
           <i className="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
           <input
@@ -83,24 +79,21 @@ export default function ResultsTable({ results }: Props) {
             className="w-full pl-8 pr-3 py-1.5 font-body text-xs border border-gray-200 rounded bg-white focus:outline-none focus:border-guinda"
           />
         </div>
-        {/* Estado */}
         <select value={filterEstado} onChange={(e) => { setFilterEstado(e.target.value); setPage(1); }} className={selectCls}>
           <option value="">Todos los estados</option>
           {estados.map((e) => <option key={e} value={e}>{e}</option>)}
         </select>
-        {/* Clase */}
         <select value={filterClase} onChange={(e) => { setFilterClase(e.target.value); setPage(1); }} className={selectCls}>
           <option value="">Todas las clases</option>
           {CLASS_KEYS.map((k) => <option key={k} value={k}>{CLASS_META[k].label}</option>)}
         </select>
-        {/* Alerta */}
         <select value={filterAlerta} onChange={(e) => { setFilterAlerta(e.target.value); setPage(1); }} className={selectCls}>
           <option value="">Todas las alertas</option>
           <option value="baja">Baja</option>
           <option value="media">Media</option>
           <option value="alta">Alta</option>
         </select>
-        {/* Prioridad */}
+
         <select value={filterPrioridad} onChange={(e) => { setFilterPrioridad(e.target.value); setPage(1); }} className={selectCls}>
           <option value="">Todas las prioridades</option>
           <option value="critica">Crítica</option>
@@ -108,7 +101,6 @@ export default function ResultsTable({ results }: Props) {
           <option value="media">Media</option>
           <option value="normal">Normal</option>
         </select>
-        {/* Sort */}
         <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className={selectCls}>
           <option value="default">Orden original</option>
           <option value="confianza_desc">Confianza ↓</option>
@@ -117,8 +109,6 @@ export default function ResultsTable({ results }: Props) {
           <option value="severidad_asc">Severidad ↑</option>
         </select>
       </div>
-
-      {/* Table */}
       <div className="overflow-x-auto">
         <table className="w-full min-w-[900px]">
           <thead className="sticky top-0 bg-guinda-ultra border-b border-gray-200 z-10">
@@ -215,8 +205,6 @@ export default function ResultsTable({ results }: Props) {
           </tbody>
         </table>
       </div>
-
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
           <p className="font-body text-xs text-gray-400">
