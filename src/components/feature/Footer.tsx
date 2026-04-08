@@ -24,11 +24,6 @@ export default function Footer() {
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 flex items-center justify-center">
-                <img
-                  src="https://public.readdy.ai/ai/img_res/356ff700-05b0-4070-a229-7fe33bf1f6a9.png"
-                  alt="Logo SADSM"
-                  className="w-10 h-10 object-contain"
-                />
               </div>
               <div>
                 <span className="font-heading font-bold text-white text-sm block leading-tight">SADSM</span>

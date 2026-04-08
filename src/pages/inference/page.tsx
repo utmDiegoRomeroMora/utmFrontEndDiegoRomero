@@ -292,7 +292,6 @@ export default function InferencePage() {
       <ProcessStepper currentStep={currentStep} appState={appState} />
 
       <main className="max-w-7xl mx-auto px-6 py-8 flex flex-col gap-6">
-        {/* Upload panel - always visible unless complete */}
         {appState !== 'complete' ? (
           <div className="max-w-2xl mx-auto w-full">
             <UploadPanel
@@ -305,7 +304,6 @@ export default function InferencePage() {
             />
           </div>
         ) : (
-          /* Collapsed file info when complete */
           <div className="flex items-center justify-between bg-white border border-gray-200 rounded-lg px-5 py-3">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 flex items-center justify-center bg-green-50 rounded-md">
@@ -325,7 +323,6 @@ export default function InferencePage() {
           </div>
         )}
 
-        {/* Processing loading state */}
         {appState === 'processing' && (
           <div className="bg-white border border-gray-200 rounded-lg p-12 flex flex-col items-center gap-4 text-center">
             <div className="w-16 h-16 flex items-center justify-center rounded-full bg-guinda-pale">
@@ -350,7 +347,6 @@ export default function InferencePage() {
           </div>
         )}
 
-        {/* Results dashboard */}
         {showResults && (
           <>
             <KPISummary results={results} />
@@ -360,7 +356,6 @@ export default function InferencePage() {
           </>
         )}
 
-        {/* Empty state guidance */}
         {appState === 'empty' && (
           <div className="max-w-2xl mx-auto w-full bg-white border border-gray-200 rounded-lg p-8">
             <h3 className="font-heading font-bold text-sm text-guinda-dark mb-4">Instrucciones de uso</h3>
@@ -388,13 +383,9 @@ export default function InferencePage() {
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="bg-guinda mt-12 py-6 border-t border-guinda-medium">
+\      <footer className="bg-guinda mt-12 py-6 border-t border-guinda-medium">
         <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-7 h-7 flex items-center justify-center">
-              <img src="https://public.readdy.ai/ai/img_res/356ff700-05b0-4070-a229-7fe33bf1f6a9.png" alt="Logo" className="w-7 h-7 object-contain" />
-            </div>
             <span className="font-body text-xs text-white/70">SADSM · Módulo de Inferencia · Uso institucional</span>
           </div>
           <p className="font-body text-xs text-white/50">© 2026 — Sistema de Apoyo a la Detección de Sequía Municipal</p>
